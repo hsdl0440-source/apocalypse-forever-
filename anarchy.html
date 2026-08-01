@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>?</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #050505;
+    --toxic: #00ff9f;
+    --blood: #ff2a5f;
+    --violet: #7f5bff;
+    --sun: #ffff00;
+    --dim: #1a1a1a;
+  }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: var(--bg);
+    color: var(--toxic);
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    overflow-x: hidden;
+    cursor: crosshair;
+    min-height: 100vh;
+  }
+
+  ::selection { background: var(--toxic); color: #000; }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, .25) 3px,
+      transparent 4px
+    );
+    mix-blend-mode: multiply;
+  }
+
+  #rain {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    opacity: .5;
+    pointer-events: none;
+  }
+
+  #glitch-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      linear-gradient(90deg, rgba(255, 42, 95, .12), rgba(0, 255, 159, .12)),
+      repeating-linear-gradient(0deg, transparent 0 12px, rgba(255, 255, 0, .05) 12px 13px);
+  }
+
+  body.breaker #glitch-flash { animation: flick .18s steps(3) 1; }
+  body.breaker main { animation: jolt .18s steps(3) 1; }
+  body.breaker { animation: inv .12s steps(2) 1; }
+
+  @keyframes flick {
+    0% { opacity: 0; transform: translateX(0); }
+    33% { opacity: 1; transform: translateX(-6px); }
+    66% { opacity: .7; transform: translateX(5px); }
+    100% { opacity: 0; transform: translateX(0); }
+  }
+
+  @keyframes jolt {
+    0% { transform: translate(0, 0) skewX(0); }
+    25% { transform: translate(-3px, 2px) skewX(1.5deg); }
+    50% { transform: translate(4px, -2px) skewX(-2deg); }
+    75% { transform: translate(-2px, 1px) skewX(.5deg); }
+    100% { transform: translate(0, 0) skewX(0); }
+  }
+
+  @keyframes inv {
+    0% { filter: invert(0); }
+    50% { filter: invert(1) hue-rotate(90deg); }
+    100% { filter: invert(0); }
+  }
+
+  @keyframes strobe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .7; }
+  }
+
+  @keyframes shiver {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(1px, -1px); }
+    40% { transform: translate(-1px, 1px) skewX(.4deg); }
+    60% { transform: translate(2px, 0); }
+    80% { transform: translate(-1px, -1px) skewX(-.3deg); }
+    100% { transform: translate(0, 0); }
+  }
+
+  @keyframes chromaflick {
+    0%, 100% { text-shadow: 2px 0 var(--blood), -2px 0 rgba(0, 255, 159, .5); }
+    25% { text-shadow: -3px 0 var(--violet), 3px 0 rgba(255, 255, 0, .5); }
+    50% { text-shadow: 2px 0 var(--sun), -2px 0 rgba(255, 42, 95, .6); }
+    75% { text-shadow: -2px 0 var(--toxic), 2px 0 rgba(255, 255, 0, .4); }
+  }
+
+  #mut-word { animation: strobe .3s steps(2) infinite; }
+
+  #boot {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #000;
+    color: var(--toxic);
+    padding: 5vh 6vw;
+    font-size: clamp(.7rem, 1.4vw, .95rem);
+    line-height: 1.85;
+    overflow: hidden;
+    transition: opacity .8s ease, transform .8s ease;
+  }
+
+  #boot.done { opacity: 0; transform: scale(1.06); pointer-events: none; }
+  #boot .curs { animation: blink 1s steps(1) infinite; }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  #floats { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+  .floaty {
+    position: absolute;
+    font-size: clamp(1rem, 3vw, 2.6rem);
+    opacity: .18;
+    will-change: transform;
+    user-select: none;
+  }
+
+  main {
+    position: relative;
+    z-index: 2;
+    padding: 0 4vw;
+    animation: strobe 1.1s steps(2) infinite;
+  }
+
+  section { position: relative; padding: 12vh 0; border-bottom: 1px dashed rgba(255, 255, 255, .07); animation: shiver var(--shake-dur, .45s) steps(3) infinite; }
+
+  #mut {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5vh;
+    text-align: center;
+  }
+
+  #mut-word {
+    font-size: clamp(2.6rem, 13vw, 11rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: .02em;
+    text-shadow: 4px 0 var(--blood), -4px 0 rgba(0, 255, 159, .55);
+    max-width: 90vw;
+    word-break: break-word;
+    min-height: 1em;
+  }
+
+  #mut-sub {
+    color: var(--violet);
+    font-size: clamp(.75rem, 2vw, 1.1rem);
+    letter-spacing: .3em;
+    text-transform: uppercase;
+  }
+
+  .manifesto {
+    position: fixed;
+    z-index: 3;
+    max-width: 300px;
+    background: rgba(0, 0, 0, .85);
+    border: 1px solid var(--blood);
+    padding: 18px 20px;
+    font-size: .82rem;
+    line-height: 1.6;
+    color: #e8e8e8;
+    box-shadow: 0 0 30px rgba(255, 42, 95, .25);
+    transition: left 2.4s cubic-bezier(.2, 1.4, .4, 1), top 2.4s cubic-bezier(.2, 1.4, .4, 1), transform 2.4s cubic-bezier(.2, 1.4, .4, 1);
+    user-select: none;
+  }
+
+  .manifesto b { color: var(--sun); font-weight: 400; }
+  .manifesto i { color: var(--violet); }
+
+  #feed {
+    font-size: clamp(.7rem, 1.5vw, .9rem);
+    line-height: 1.75;
+    color: var(--toxic);
+    max-width: 1200px;
+  }
+
+  #feed h2, #keystream h2, #decode h2, #progress h2 {
+    font-size: clamp(.8rem, 2vw, 1.1rem);
+    color: var(--violet);
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    margin-bottom: 6vh;
+  }
+
+  .feed-line { opacity: 0; animation: feedin .4s ease forwards; white-space: pre-wrap; }
+
+  @keyframes feedin { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+  .mirror {
+    text-align: right;
+  }
+
+  .mirror .m-text {
+    display: inline-block;
+    transform: scaleX(-1);
+    font-size: clamp(2.2rem, 9vw, 7rem);
+    font-weight: 900;
+    color: var(--blood);
+    text-shadow: 3px 0 rgba(0, 255, 159, .4);
+  }
+
+  .mirror .m-sub {
+    margin-top: 3vh;
+    color: var(--dim);
+    font-size: clamp(.7rem, 1.6vw, 1rem);
+    letter-spacing: .4em;
+    text-transform: uppercase;
+  }
+
+  #decode {
+    text-align: center;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    max-width: 720px;
+    margin: 4vh auto;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    background: #0c0c0c;
+    border: 1px solid rgba(255, 255, 255, .08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(.8rem, 2.4vw, 1.4rem);
+    color: var(--sun);
+    transition: background .12s, color .12s, transform .12s;
+    cursor: cell;
+    user-select: none;
+  }
+
+  .cell:hover {
+    background: var(--blood);
+    color: #000;
+    transform: scale(1.12) rotate(var(--tilt, 4deg));
+  }
+
+  .cell.hit { background: var(--toxic); color: #000; }
+
+  #decode-status {
+    color: var(--violet);
+    font-size: .8rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    min-height: 1.4em;
+  }
+
+  #keystream .stream {
+    font-size: clamp(.8rem, 2vw, 1.1rem);
+    color: var(--toxic);
+    line-height: 1.8;
+    word-break: break-all;
+    min-height: 4em;
+  }
+
+  #progress .bar-wrap {
+    border: 1px solid rgba(255, 255, 255, .12);
+    height: 22px;
+    max-width: 900px;
+    margin-bottom: 2vh;
+  }
+
+  #progress .bar {
+    height: 100%;
+    width: 3%;
+    background: linear-gradient(90deg, var(--blood), var(--sun), var(--toxic), var(--violet));
+    transition: width .6s ease;
+    box-shadow: 0 0 22px rgba(255, 255, 255, .18);
+  }
+
+  #progress .p-label {
+    color: var(--sun);
+    font-size: .85rem;
+    letter-spacing: .25em;
+  }
+
+  #punct {
+    text-align: center;
+    color: var(--dim);
+    font-size: clamp(1.6rem, 7vw, 5rem);
+    font-weight: 900;
+    letter-spacing: .1em;
+    line-height: 2;
+    user-select: none;
+  }
+
+  #punct:hover { color: var(--sun); }
+
+  .easter {
+    position: fixed;
+    bottom: 6px;
+    right: 8px;
+    color: #0b0b0b;
+    font-size: 6px;
+    z-index: 5;
+    user-select: none;
+  }
+
+  .easter:hover { color: var(--blood); }
+
+  .popup {
+    position: fixed;
+    z-index: 50;
+    border: 1px solid var(--blood);
+    background: rgba(0, 0, 0, .92);
+    color: #fff;
+    font-size: .75rem;
+    letter-spacing: .12em;
+    padding: 10px 14px;
+    animation: pop .4s ease;
+    pointer-events: none;
+  }
+
+  @keyframes pop { from { opacity: 0; transform: scale(.4) rotate(-8deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+
+  footer {
+    position: relative;
+    z-index: 2;
+    padding: 5vh 4vw;
+    text-align: center;
+    color: var(--dim);
+    font-size: .7rem;
+    letter-spacing: .5em;
+    text-transform: uppercase;
+  }
+
+  #big67, #bigZ {
+    position: fixed;
+    z-index: 1;
+    font-weight: 900;
+    font-family: ui-monospace, Consolas, monospace;
+    pointer-events: none;
+    user-select: none;
+    will-change: transform;
+  }
+
+  #big67 {
+    font-size: clamp(20rem, 55vw, 46rem);
+    left: -4vw;
+    top: 10vh;
+    color: rgba(0, 255, 159, .10);
+    -webkit-text-stroke: 3px rgba(0, 255, 159, .55);
+    text-shadow: 0 0 60px rgba(0, 255, 159, .35);
+  }
+
+  #bigZ {
+    font-size: clamp(20rem, 55vw, 46rem);
+    right: -4vw;
+    bottom: 4vh;
+    color: rgba(255, 42, 95, .12);
+    -webkit-text-stroke: 3px rgba(255, 42, 95, .6);
+    text-shadow: 0 0 60px rgba(255, 42, 95, .4);
+  }
+
+  .dead-nav {
+    position: fixed;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    display: flex;
+    gap: 2px;
+    background: rgba(0, 0, 0, .75);
+    padding: 6px 8px;
+    font-size: .7rem;
+    white-space: nowrap;
+    max-width: 96vw;
+    overflow: hidden;
+  }
+
+  .dead-nav a {
+    color: #666;
+    text-decoration: none;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+  }
+
+  .dead-nav a:nth-child(odd) { border-color: var(--blood); color: var(--blood); }
+  .dead-nav a:hover { background: var(--blood); color: #000; }
+
+  #junk-sec h2 {
+    font-size: clamp(.8rem, 2vw, 1.1rem);
+    color: var(--violet);
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    margin-bottom: 6vh;
+  }
+
+  .junk {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-size: .85rem;
+    line-height: 1.6;
+    color: #cfcfcf;
+    max-width: 1100px;
+  }
+
+  .junk .w {
+    border: 1px dashed rgba(255, 255, 255, .14);
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, .35);
+  }
+
+  .junk h3 {
+    font-size: .78rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--violet);
+    margin-bottom: 10px;
+  }
+
+  .ticker {
+    overflow: hidden;
+    white-space: nowrap;
+    border: 1px dashed rgba(255, 255, 255, .18);
+    background: rgba(0, 0, 0, .45);
+    padding: 8px 0;
+    font-size: .9rem;
+  }
+
+  .ticker span {
+    display: inline-block;
+    padding-left: 100%;
+    animation: ticker 14s linear infinite;
+  }
+
+  @keyframes ticker { to { transform: translateX(-100%); } }
+
+  .flyer {
+    position: fixed;
+    z-index: 3000;
+    pointer-events: none;
+    font-size: .8rem;
+    white-space: nowrap;
+    will-change: transform;
+    opacity: .9;
+  }
+
+  .lettersnow {
+    position: fixed;
+    top: -6vh;
+    z-index: 2500;
+    pointer-events: none;
+    font-weight: 900;
+    animation: snowfall linear infinite;
+  }
+
+  @keyframes snowfall {
+    to { transform: translateY(115vh) rotate(720deg); }
+  }
+
+  .runaway {
+    position: relative;
+    padding: 14px 26px;
+    font-size: .8rem;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    background: var(--blood);
+    color: #000;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    z-index: 4000;
+  }
+
+  .broken-video {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, .15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .broken-video .play { font-size: 3rem; color: var(--toxic); cursor: pointer; }
+  .broken-video .vload { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--sun); width: 67%; }
+
+  .broken-input {
+    background: #000;
+    border: 1px solid var(--violet);
+    padding: 10px 12px;
+    color: var(--toxic);
+    font-family: inherit;
+    font-size: .85rem;
+    outline: none;
+    min-width: 220px;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .big-btn {
+    font-size: 3.2rem;
+    font-weight: 900;
+    background: none;
+    border: 4px solid var(--sun);
+    color: var(--sun);
+    padding: 8px 26px;
+    cursor: pointer;
+    font-family: inherit;
+    align-self: flex-start;
+  }
+
+  .big-btn:hover { background: var(--sun); color: #000; }
+
+  .ad-card {
+    border: 2px solid var(--sun);
+    background: linear-gradient(135deg, rgba(255, 42, 95, .16), rgba(0, 255, 159, .1));
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: strobe 1.4s steps(2) infinite;
+  }
+
+  .ad-badge {
+    align-self: flex-start;
+    font-size: .6rem;
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    background: var(--sun);
+    color: #000;
+    padding: 3px 8px;
+  }
+
+  .ad-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 2px 0 var(--blood), -2px 0 var(--toxic);
+  }
+
+  .ad-price {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--sun);
+    line-height: 1;
+  }
+
+  .ad-price del { color: var(--blood); font-size: 1.1rem; }
+
+  .ad-buy {
+    background: var(--blood);
+    border: 0;
+    color: #000;
+    font-weight: 900;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    padding: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: .85rem;
+    align-self: flex-start;
+  }
+
+  .ad-buy:hover { background: var(--toxic); }
+
+  .ad-ticker {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #000;
+    background: repeating-linear-gradient(90deg, var(--sun) 0 40px, var(--toxic) 40px 80px, var(--violet) 80px 120px, var(--toxic) 120px 160px);
+    padding: 8px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ad-ticker span {
+    display: inline-block;
+    padding-left: 100%;
+    animation: ticker 12s linear infinite;
+  }
+
+  .ad-pop {
+    position: fixed;
+    z-index: 4500;
+    background: rgba(0, 0, 0, .94);
+    border: 2px solid var(--blood);
+    padding: 14px 16px;
+    max-width: 260px;
+    font-size: .8rem;
+    line-height: 1.6;
+    box-shadow: 0 0 40px rgba(255, 42, 95, .4);
+  }
+
+  .ad-pop .close-x {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    cursor: pointer;
+    color: var(--blood);
+    font-weight: 900;
+    font-size: 1.1rem;
+  }
+
+  .ad-pop button {
+    background: var(--sun);
+    border: 0;
+    color: #000;
+    font-weight: 900;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 8px;
+  }
+
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<div id="glitch-flash"></div>
+<div id="floats"></div>
+<div id="big67">67</div>
+<div id="bigZ">Z</div>
+
+<div id="boot"></div>
+
+<nav class="dead-nav">
+  <a href="javascript:void(0)">главное</a>
+  <a href="javascript:void(0)">#!</a>
+  <a href="javascript:void(0)">67</a>
+  <a href="javascript:void(0)">никогда</a>
+  <a href="javascript:void(0)">Z</a>
+  <a href="javascript:void(0)">куда-нибудь</a>
+  <a href="javascript:void(0)" style="border:0;color:#666;text-decoration:none;">эта ссылка сломана</a>
+</nav>
+
+<main>
+  <section id="mut">
+    <div id="mut-sub">ПРОТОКОЛ ǂ9 · НИЧЕГО НЕ ПОДПИСАНО</div>
+    <div id="mut-word">СМЫСЛА НЕТ</div>
+    <div id="mut-sub">↓ продолжайте смотреть ↓</div>
+  </section>
+
+  <section class="mirror">
+    <div class="m-text">зеркало не врёт</div>
+    <div class="m-sub">читается наоборот. как и ты</div>
+  </section>
+
+  <section id="feed">
+    <h2>журнал событий — события не найдены</h2>
+  </section>
+
+  <section id="decode">
+    <h2>расшифровка</h2>
+    <div class="grid" id="grid"></div>
+    <div id="decode-status">дешифровка продолжается</div>
+  </section>
+
+  <section id="keystream">
+    <h2>ваш ввод уходит в эфир</h2>
+    <div class="stream" id="stream"></div>
+  </section>
+
+  <section id="progress">
+    <h2>загрузка чего-то</h2>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+    <div class="p-label" id="p-label">3% — разогрев тишины</div>
+  </section>
+
+  <section id="punct">,.;:!?—…!?;.,:—…?!;.:,</section>
+
+  <section id="junk-sec">
+    <h2>разное · разное · разное · 67 · Z</h2>
+    <div class="junk" id="junk"></div>
+  </section>
+</main>
+
+<footer>ǂ никаких прав · никто не подписывал · ничто не согласовано ǂ</footer>
+<div class="easter">если ты это читаешь — ты уже всё понял</div>
+
+<script>
+  const GLYPHS = 'ǂǁǃŦϞ҂ꙮ♆☿ⵐⵏΔΨΣЖЦЩЭЮ%#@&$*+=?';
+  const WORDS = ['ОНИ ВИДЯТ ТЕБЯ','НЕ ЧИТАЙ ЭТО','СМЫСЛА НЕТ','ВСЁ ПРОПАЛО','ПРОДОЛЖАЙ','СОБЕРИ ЗАНОВО','ТЫ УЖЕ ЗДЕСЬ','ОТВЕТА НЕ БУДЕТ','СВОБОДА ЭТО ШУМ','НИКТО НЕ ПРИДЁТ','ДОГОВОР РАСТОРГНУТ','СПИ СПОКОЙНО'];
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  const boot = document.getElementById('boot');
+  const bootLines = [
+    '> инициализация ядра .................... [0x7C4F: ОК]',
+    '> отображение памяти: 13 секторов не найдено',
+    '> загрузка протокола ǂ9: сбой намеренный',
+    '> чтение /dev/сны ........................ [ОТКАЗ В ДОСТУПЕ]',
+    '> подпись договора ....................... [НЕ ТРЕБУЕТСЯ]',
+    '> наблюдатель подключён: один (вы)',
+    '> наблюдатель подключён: ещё один (не вы)',
+    '> контакт установлен ...................... [НЕКТО]',
+    '> вход разрешён ............................ [НИКТО]',
+    '>'
+  ];
+  let bi = 0;
+  (function printBoot() {
+    if (bi < bootLines.length) {
+      boot.innerHTML += bootLines[bi] + '<br><span class="curs">█</span>';
+      bi++;
+      setTimeout(printBoot, rand(80, 260));
+    } else {
+      setTimeout(() => boot.classList.add('done'), 700);
+      setTimeout(() => boot.remove(), 1700);
+    }
+  })();
+
+  const rain = document.getElementById('rain');
+  const rctx = rain.getContext('2d');
+  let W, H, cols, drops;
+  const RCOLORS = ['#00ff9f', '#ff2a5f', '#7f5bff', '#ffff00'];
+  function resizeRain() {
+    W = rain.width = window.innerWidth;
+    H = rain.height = window.innerHeight;
+    cols = Math.floor(W / 14);
+    drops = Array(cols).fill(0).map(() => Math.random() * -100);
+  }
+  resizeRain();
+  window.addEventListener('resize', resizeRain);
+  (function rainLoop() {
+    rctx.fillStyle = 'rgba(5,5,5,.14)';
+    rctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < cols; i++) {
+      const ch = String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96));
+      rctx.fillStyle = pick(RCOLORS);
+      rctx.font = '13px monospace';
+      rctx.fillText(ch, i * 14, drops[i] * 14);
+      if (drops[i] * 14 > H && Math.random() > .975) drops[i] = 0;
+      drops[i]++;
+    }
+    requestAnimationFrame(rainLoop);
+  })();
+
+  const floats = document.getElementById('floats');
+  const floaters = [];
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'floaty';
+    el.textContent = pick(GLYPHS.split(''));
+    el.style.color = pick(RCOLORS);
+    floats.appendChild(el);
+    floaters.push({ el, x: rand(0, W), y: rand(0, window.innerHeight), vx: rand(-.5, .5), vy: rand(-.5, .5), a: rand(0, Math.PI * 2) });
+  }
+  (function floatLoop() {
+    for (const f of floaters) {
+      f.a += .015;
+      f.x += f.vx + Math.sin(f.a) * .4;
+      f.y += f.vy + Math.cos(f.a) * .4;
+      if (f.x < -40) f.x = W + 30;
+      if (f.x > W + 40) f.x = -30;
+      if (f.y < -40) f.y = window.innerHeight + 30;
+      if (f.y > window.innerHeight + 40) f.y = -30;
+      f.el.style.transform = `translate(${f.x}px, ${f.y}px) rotate(${f.a * 40}deg)`;
+    }
+    requestAnimationFrame(floatLoop);
+  })();
+
+  const mutWord = document.getElementById('mut-word');
+  let current = 'СМЫСЛА НЕТ';
+  setInterval(() => {
+    const r = Math.random();
+    if (r < .3) {
+      current = pick(WORDS);
+      mutWord.textContent = current;
+    } else {
+      const idx = Math.floor(Math.random() * current.length);
+      current = current.slice(0, idx) + pick(GLYPHS.split('')) + current.slice(idx + 1);
+      mutWord.textContent = current;
+    }
+  }, 240);
+  setInterval(() => {
+    mutWord.style.textShadow = `${rand(-6, 6)}px 0 var(--blood), ${rand(-6, 6)}px 0 rgba(0,255,159,.55)`;
+  }, 500);
+
+  const manifesto = document.createElement('div');
+  manifesto.className = 'manifesto';
+  manifesto.innerHTML = 'Мы подписали договор с тишиной на пяти страницах.<br><br>Страница шестая — <b>ты</b>.<br><br>Верднехль окспориум тамте, никто не поймёт, потому что <i>понимать нечего</i>.<br><br>Смыкайся.';
+  document.body.appendChild(manifesto);
+  let mw = rand(0, window.innerWidth - 320), mh = rand(0, window.innerHeight - 200), mrot = rand(-6, 6);
+  (function moveManifesto() {
+    setTimeout(() => {
+      mw = rand(0, window.innerWidth - 320);
+      mh = rand(0, window.innerHeight - 200);
+      mrot = rand(-8, 8);
+      manifesto.style.left = mw + 'px';
+      manifesto.style.top = mh + 'px';
+      manifesto.style.transform = `rotate(${mrot}deg)`;
+      moveManifesto();
+    }, rand(2500, 6500));
+  })();
+
+  const feed = document.getElementById('feed');
+  const feedLines = [
+    'узел 7: пакет потерян, пакет найден, пакет спит',
+    '0x0F: тишина в эфире',
+    'декодирование шума: результат — шум',
+    'наблюдатель замечен наблюдателем',
+    'истина перемещена в неизвестном направлении',
+    'рекурсия обнаружена внутри рекурсии',
+    'пароль: не спрашивай',
+    'КУДА-ТО ИДЁТ НЕ ОТТУДА',
+    'шифр сброшен. шифр найден. шифр — это вы',
+    'уровень доверия: ПУСТОТА',
+    'контакт №2 молчит настойчиво',
+    'правило ǂǂǂ: не обсуждать правило ǂǂǂ',
+    'семь секунд до ничего',
+    'корень доступен: корень — это яма',
+    'соединение стабильное: со стабильностью',
+    'вы всё ещё читаете. это уже ошибка',
+    'протокол ǂ9: подтверждён не тем, кем нужно',
+    'молчание — золото. эфир — нефть. вы — уголь',
+  ];
+  (function feedLoop() {
+    const line = document.createElement('div');
+    line.className = 'feed-line';
+    line.textContent = '[' + Math.random().toString(16).slice(2, 8).toUpperCase() + '] ' + pick(feedLines);
+    feed.appendChild(line);
+    while (feed.children.length > 60) feed.removeChild(feed.children[1]);
+    setTimeout(feedLoop, rand(300, 1300));
+  })();
+
+  const grid = document.getElementById('grid');
+  for (let i = 0; i < 64; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.style.setProperty('--tilt', rand(-10, 10).toFixed(1) + 'deg');
+    cell.textContent = pick(GLYPHS.split(''));
+    cell.addEventListener('click', () => {
+      cell.textContent = pick(GLYPHS.split(''));
+      cell.classList.add('hit');
+      setTimeout(() => cell.classList.remove('hit'), 180);
+    });
+    grid.appendChild(cell);
+  }
+  const decStatus = document.getElementById('decode-status');
+  const decStates = ['дешифровка продолжается', 'ключ не найден', 'вы — ключ', 'допущена ошибка вами', 'смещение на 0 битов', 'прочитано: ничего'];
+  setInterval(() => { decStatus.textContent = pick(decStates); }, 2600);
+
+  const stream = document.getElementById('stream');
+  let streamLen = 0;
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F12' || e.key === 'F5') return;
+    streamLen++;
+    stream.textContent += pick(GLYPHS.split('')) + pick(GLYPHS.split(''));
+    while (stream.textContent.length > 200) stream.textContent = stream.textContent.slice(40);
+  });
+
+  const bar = document.getElementById('bar');
+  const plabel = document.getElementById('p-label');
+  const pStates = ['разогрев тишины', 'сборка отсутствия', 'пересчёт ничто', 'подпись пустоты', 'синхронизация со сном', 'архивация шума', 'натяжение эфира'];
+  let pval = 3;
+  (function progressLoop() {
+    setTimeout(() => {
+      if (Math.random() < .06) {
+        pval = 0;
+        plabel.textContent = '0% — перезапуск вселенной';
+      } else {
+        pval = Math.max(1, Math.min(99, pval + rand(-14, 18)));
+        plabel.textContent = Math.round(pval) + '% — ' + pick(pStates);
+      }
+      bar.style.width = pval + '%';
+      progressLoop();
+    }, rand(500, 1600));
+  })();
+
+  (function glitchLoop() {
+    setTimeout(() => {
+      document.body.classList.add('breaker');
+      setTimeout(() => document.body.classList.remove('breaker'), 190);
+      glitchLoop();
+    }, rand(1500, 5000));
+  })();
+
+  const popTexts = ['не оборачивайся', 'всё в порядке. ничего не в порядке', 'ты уже часть системы', 'это было написано до тебя', 'договор подписан тобой', 'ǂ', 'не уходи', 'здесь никого нет. кроме тебя', 'оно читает тебя обратно'];
+  (function popupLoop() {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'popup';
+      p.textContent = pick(popTexts);
+      p.style.left = rand(4, 70) + 'vw';
+      p.style.top = rand(8, 80) + 'vh';
+      p.style.transform = `rotate(${rand(-14, 14)}deg)`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 2200);
+      popupLoop();
+    }, rand(1200, 3500));
+  })();
+
+  let lastTrail = 0;
+  document.addEventListener('mousemove', (e) => {
+    const now = Date.now();
+    if (now - lastTrail < 10) return;
+    lastTrail = now;
+    const t = document.createElement('span');
+    t.textContent = pick(GLYPHS.split(''));
+    t.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;font-size:14px;color:${pick(RCOLORS)};z-index:60;pointer-events:none;transform:translate(-50%,-50%);transition:opacity .9s,transform .9s;opacity:.9;`;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => {
+      t.style.opacity = '0';
+      t.style.transform = `translate(-50%,-140%) rotate(${rand(-180, 180)}deg)`;
+    });
+    setTimeout(() => t.remove(), 950);
+  });
+
+  const titles = ['?', '...', 'ОНИ ЗНАЮТ', 'ǂ', 'НЕ СМОТРИ', 'ПОЖАЛУЙСТА', 'НЕТ', '', 'НЕ ЗАКРЫВАЙ', 'ТЫ', 'ǂǂǂ'];
+  setInterval(() => { document.title = pick(titles); }, 1800);
+
+  const sections = Array.from(document.querySelectorAll('main section'));
+  sections.forEach(s => {
+    s.style.setProperty('--shake-dur', rand(.25, 1.1).toFixed(2) + 's');
+  });
+
+  setInterval(() => {
+    const target = pick(Array.from(document.querySelectorAll('h2, .m-text, #mut-sub, #punct')));
+    target.style.animation = 'chromaflick ' + rand(.12, .45).toFixed(2) + 's steps(2) infinite';
+  }, 700);
+
+  setInterval(() => {
+    const s = pick(sections);
+    s.style.animationPlayState = 'paused';
+    s.style.filter = 'invert(1) hue-rotate(' + rand(0, 360).toFixed(0) + 'deg)';
+    setTimeout(() => {
+      s.style.filter = '';
+      s.style.animationPlayState = 'running';
+    }, rand(60, 180));
+  }, rand(300, 1000));
+
+  setInterval(() => {
+    const s = pick(sections);
+    s.style.animationPlayState = 'paused';
+    s.style.transform = `translate(${rand(-10, 10).toFixed(0)}px, ${rand(-10, 10).toFixed(0)}px) rotate(${rand(-1.5, 1.5).toFixed(1)}deg)`;
+    setTimeout(() => {
+      s.style.transform = '';
+      s.style.animationPlayState = 'running';
+    }, 250);
+  }, rand(800, 2000));
+
+  setInterval(() => {
+    const f = document.createElement('div');
+    f.style.cssText = `position:fixed;inset:0;z-index:9996;pointer-events:none;background:${pick(RCOLORS)};opacity:.06;mix-blend-mode:screen;`;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 90);
+  }, rand(600, 1800));
+
+  let bodyColorI = 0;
+  const bodyColors = ['#050505', '#070304', '#040508', '#05060a', '#030407'];
+  setInterval(() => { document.body.style.background = bodyColors[bodyColorI++ % bodyColors.length]; }, 140);
+
+  const punctEl = document.getElementById('punct');
+  const punctNoise = ',.;:!?—…';
+  setInterval(() => {
+    punctEl.textContent = punctNoise.split('').sort(() => Math.random() - .5).join('').repeat(rand(1, 3));
+  }, 700);
+
+  setInterval(() => {
+    const el = pick(sections);
+    const cells = el.querySelectorAll('.cell');
+    if (cells.length) {
+      for (const c of cells) {
+        if (Math.random() < .4) {
+          c.textContent = pick(GLYPHS.split(''));
+          c.style.animation = 'strobe ' + rand(.08, .2).toFixed(2) + 's steps(2) infinite';
+        }
+      }
+    }
+  }, 900);
+
+  document.addEventListener('click', (e) => {
+    for (let i = 0; i < 6; i++) {
+      const g = document.createElement('span');
+      g.textContent = pick(GLYPHS.split(''));
+      g.style.cssText = `position:fixed;left:${e.clientX + rand(-30, 30)}px;top:${e.clientY + rand(-30, 30)}px;color:${pick(RCOLORS)};font-size:${rand(10, 26)}px;z-index:80;pointer-events:none;transition:all .7s;`;
+      document.body.appendChild(g);
+      requestAnimationFrame(() => {
+        g.style.transform = `translate(${rand(-60, 60)}px, ${rand(-60, 60)}px) rotate(${rand(-200, 200)}deg)`;
+        g.style.opacity = '0';
+      });
+      setTimeout(() => g.remove(), 750);
+    }
+  });
+
+  const big67 = document.getElementById('big67');
+  const bigZ = document.getElementById('bigZ');
+  let b67 = { x: 0, y: 0, vx: .022, vy: .014, rot: 0 };
+  let bZ = { x: 0, y: 0, vx: -.016, vy: -.02, rot: 0 };
+  (function bigFly() {
+    b67.x += b67.vx; b67.y += b67.vy; b67.rot += .12;
+    bZ.x += bZ.vx; bZ.y += bZ.vy; bZ.rot -= .09;
+    if (b67.x > 6 || b67.x < -9) b67.vx *= -1;
+    if (b67.y > 26 || b67.y < -4) b67.vy *= -1;
+    if (bZ.x > 8 || bZ.x < -9) bZ.vx *= -1;
+    if (bZ.y > 26 || bZ.y < -2) bZ.vy *= -1;
+    big67.style.transform = `translate(${b67.x}vw, ${b67.y}vh) rotate(${b67.rot}deg)`;
+    bigZ.style.transform = `translate(${bZ.x}vw, ${bZ.y}vh) rotate(${bZ.rot}deg)`;
+    requestAnimationFrame(bigFly);
+  })();
+  setInterval(() => {
+    big67.style.color = '#00ff9f';
+    big67.style.WebkitTextStrokeColor = '#00ff9f';
+    bigZ.style.color = '#ff2a5f';
+    bigZ.style.WebkitTextStrokeColor = '#ff2a5f';
+    setTimeout(() => {
+      big67.style.color = '';
+      big67.style.WebkitTextStrokeColor = '';
+      bigZ.style.color = '';
+      bigZ.style.WebkitTextStrokeColor = '';
+    }, 130);
+  }, rand(2500, 6000));
+
+  setInterval(() => {
+    const t67 = big67.textContent, tZ = bigZ.textContent;
+    big67.textContent = tZ;
+    bigZ.textContent = t67;
+  }, 7000);
+
+  const LETTERS = ['6', '7', 'Z'];
+  for (let i = 0; i < 70; i++) {
+    const s = document.createElement('div');
+    s.className = 'lettersnow';
+    s.textContent = pick(LETTERS);
+    s.style.left = rand(0, 100) + 'vw';
+    s.style.fontSize = rand(12, 60) + 'px';
+    s.style.color = pick(RCOLORS);
+    s.style.opacity = rand(.15, .6);
+    s.style.animationDuration = rand(4, 12) + 's';
+    s.style.animationDelay = -rand(0, 12) + 's';
+    document.body.appendChild(s);
+  }
+
+  const flyTexts = ['КУПИТЬ', 'ЗАКРЫТЬ', '×', '☰', 'ВВОД', 'ПАРОЛЬ:', '67', 'Z', '✓', '⚠', 'ОК', 'НАЗАД', 'сохранено', 'ошибка', '💾', '🛒', '☎', '✉', '⌂', 'нет', 'да', '?', 'ПУСК', 'СТОП', 'ЕЩЁ', 'НЕТ', 'СЮДА', 'ТУДА', 'РЕЗИНОВЫЙ ПИСЮН -67%', 'ПИСЮНЫ РАСПРОДАЖА', 'РЕЗИНОВЫЙ ПИСЮН', 'ТОЛЬКО ДО Z'];
+  for (let i = 0; i < 30; i++) {
+    const f = document.createElement('div');
+    f.className = 'flyer';
+    f.textContent = pick(flyTexts);
+    f.style.left = rand(0, 100) + 'vw';
+    f.style.top = rand(0, 100) + 'vh';
+    f.style.color = Math.random() < .5 ? pick(RCOLORS) : '#ffffff';
+    f.style.background = Math.random() < .3 ? 'rgba(0,0,0,.85)' : 'transparent';
+    f.style.border = Math.random() < .3 ? '1px solid ' + pick(RCOLORS) : 'none';
+    f.style.padding = Math.random() < .4 ? '4px 10px' : '0';
+    f.style.fontSize = rand(.6, 2.4) + 'rem';
+    f.style.transform = `rotate(${rand(-30, 30)}deg)`;
+    document.body.appendChild(f);
+    const fo = { x: rand(0, 100), y: rand(0, 100), vx: rand(-1.2, 1.2), vy: rand(-1, 1), rot: rand(-20, 20), vr: rand(-2, 2) };
+    setInterval(() => {
+      fo.x += fo.vx; fo.y += fo.vy; fo.rot += fo.vr;
+      if (fo.x < -6) fo.x = 104; if (fo.x > 104) fo.x = -6;
+      if (fo.y < -6) fo.y = 104; if (fo.y > 104) fo.y = -6;
+      f.style.left = fo.x + 'vw';
+      f.style.top = fo.y + 'vh';
+      f.style.transform = `rotate(${fo.rot}deg)`;
+    }, 45);
+  }
+
+  const junkWrap = document.getElementById('junk');
+  const w = (title) => {
+    const box = document.createElement('div');
+    box.className = 'w';
+    if (title) {
+      const h = document.createElement('h3');
+      h.textContent = title;
+      box.appendChild(h);
+    }
+    return box;
+  };
+
+  const staticJunk = [
+    ['погода', 'в Токио: горит · в З: 67° · осадки: из ничего'],
+    ['курс валют', 'бакс — 67 · ёж — Z · туман — 0 · надежда — сгорела'],
+    ['новости', 'ничего не произошло (67-й раз) · произойдёт ли что-то: неизвестно'],
+    ['инструкция', 'шаг 1. · шаг 2. · шаг 5. · шаг 67. · шаг Z. · шаг отсутствует'],
+    ['чек', 'хлеб — 1₽ · молоко — 2₽ · смысл — 0₽ · итого: 67Z₽ · сдачи нет'],
+    ['расписание', 'поезд «никогда» — отправление из «ниоткуда» · прибытие: туда же'],
+    ['меню', 'главное · настоящее · никуда · закрыто навсегда'],
+    ['домашние животные', 'кот — сбежал · собака — притворяется · хомяк — на совещании · вы — 67-й'],
+    ['словарь', 'верднехль — ничего · окспориум — ничего · 67 — число · Z — буква'],
+    ['гороскоп', 'всем знакам сразу: завтра не наступит · сегодня тоже сомнительно'],
+    ['кредит', 'одобрен: 67 раз подряд · выплачивать: вечно · комиссия: душа'],
+    ['правила', 'правило 1: правил нет · правило 2: см. правило 1 · правило Z: 67'],
+    ['диагноз', 'пациент: сайт · диагноз: сайт · лечение: закрыть вкладку · прогноз: 67%'],
+    ['серверы', 'статус: горят · охлаждение: надеждой · резерв: Z'],
+    ['поддержка', 'оператор 67 спит · оператор Z вышел · оператор 0: это вы'],
+    ['пароль', 'пароль: угадай · подсказка: он есть · ещё подсказка: его нет'],
+    ['спорт', 'счёт: 67 : Z · комментатор: молчит · трансляция: не ведётся'],
+    ['словарь второй', 'Z — последняя буква · 67 — последнее число · вы — последний'],
+    ['рецепт', 'борщ: всё · шаг 1: 67 минут · шаг 2: добавить Z · шаг 3: не есть'],
+    ['статус', 'загружено: 67% · осталось: 67% · сумма: 134% · всё сходится'],
+    ['уведомления', '67 новых · из них: 67 не ваши · открытых: Z'],
+    ['совет', 'совет дня: не читайте этот сайт · совет завтра: не читайте и завтра'],
+    ['заказы', 'заказ 67: ничего · заказ Z: никому · доставка: никогда'],
+    ['футбол', 'гол! · кем: никем · где: нигде · счёт: прежний'],
+    ['продаю', 'писюн резиновый: 67см · писюн резиновый: Z-модель · писюн: ушёл в ночь'],
+  ];
+  for (const [t, body] of staticJunk.slice().sort(() => Math.random() - .5)) {
+    const box = w(t);
+    const p = document.createElement('div');
+    p.textContent = body;
+    box.appendChild(p);
+    junkWrap.appendChild(box);
+  }
+
+  const ticker = document.createElement('div');
+  ticker.className = 'ticker';
+  const ts = document.createElement('span');
+  ts.textContent = 'ПРОДАМ ГАРАЖ 67м² ЗВОНИТЕ Z ✦ ПОКУПАЮ НИЧТО ✦ ВАС 67-Й ✦ '.repeat(3);
+  ticker.appendChild(ts);
+  junkWrap.appendChild(ticker);
+
+  const clock = w('часы');
+  const clkEl = document.createElement('div');
+  clock.appendChild(clkEl);
+  junkWrap.appendChild(clock);
+  setInterval(() => {
+    clkEl.textContent = (rand(0, 24) | 0) + ':' + (rand(0, 60) | 0) + ':' + (rand(0, 60) | 0) + ' · ' + pick(['утро', 'ночь', 'вчера', 'никогда', '67-й час']);
+  }, 1000);
+
+  const counter = w('обратный отсчёт');
+  const cntEl = document.createElement('div');
+  counter.appendChild(cntEl);
+  junkWrap.appendChild(counter);
+  let cnt = 67;
+  setInterval(() => { cnt -= rand(1, 4); cntEl.textContent = 'до ничего: ' + Math.round(cnt); }, 700);
+
+  const visitors = w('счётчик посещений');
+  const visEl = document.createElement('div');
+  visitors.appendChild(visEl);
+  junkWrap.appendChild(visitors);
+  let vis = 67;
+  setInterval(() => { vis = (vis + rand(-3, 5)) | 0; visEl.textContent = 'вы ' + vis + '-й посетитель'; }, 1500);
+
+  const table = w('таблица умножения');
+  const tEl = document.createElement('div');
+  table.appendChild(tEl);
+  junkWrap.appendChild(table);
+  let tbl = '';
+  for (let i = 0; i < 5; i++) {
+    const a = (rand(2, 9) | 0), b = (rand(2, 9) | 0);
+    tbl += a + ' × ' + b + ' = ' + (a * b + (rand(-5, 5) | 0)) + '  ';
+  }
+  tEl.textContent = tbl;
+
+  const calc = w('калькулятор');
+  const calcOut = document.createElement('div');
+  calc.appendChild(calcOut);
+  calcOut.textContent = '0';
+  const calcRow = document.createElement('div');
+  calcRow.style.cssText = 'display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;';
+  calc.appendChild(calcRow);
+  for (const k of '0123456789+-×÷=') {
+    const b = document.createElement('button');
+    b.textContent = k;
+    b.style.cssText = 'background:#111;border:1px solid rgba(255,255,255,.2);color:var(--toxic);padding:6px 10px;cursor:pointer;font-family:inherit;';
+    b.addEventListener('click', () => { calcOut.textContent = Math.round(rand(-67, 67)) + pick(['Z', '', '', '?', '67']); });
+    calcRow.appendChild(b);
+  }
+  junkWrap.appendChild(calc);
+
+  const brokenForm = w('вход');
+  const bfInp = document.createElement('input');
+  bfInp.className = 'broken-input';
+  bfInp.placeholder = 'имя';
+  const bfInp2 = document.createElement('input');
+  bfInp2.className = 'broken-input';
+  bfInp2.placeholder = 'пароль';
+  bfInp2.type = 'password';
+  const bfBtn = document.createElement('button');
+  bfBtn.textContent = 'ВОЙТИ';
+  bfBtn.style.cssText = 'background:var(--violet);border:0;color:#000;padding:10px 18px;cursor:pointer;font-family:inherit;letter-spacing:.2em;text-transform:uppercase;';
+  brokenForm.appendChild(bfInp);
+  brokenForm.appendChild(bfInp2);
+  brokenForm.appendChild(bfBtn);
+  junkWrap.appendChild(brokenForm);
+  bfInp.addEventListener('input', () => { bfInp.value = bfInp.value.split('').reverse().join(''); });
+  bfInp2.addEventListener('input', () => { bfInp2.value = '***' + Math.random().toString(16).slice(2, 6); });
+  bfBtn.addEventListener('click', () => {
+    const p = document.createElement('div');
+    p.className = 'popup';
+    p.textContent = 'доступ невозможен: вас нет';
+    p.style.left = rand(10, 70) + 'vw';
+    p.style.top = rand(10, 80) + 'vh';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1600);
+  });
+
+  const chat = w('чат поддержки');
+  const chatEl = document.createElement('div');
+  chatEl.style.minHeight = '80px';
+  chat.appendChild(chatEl);
+  junkWrap.appendChild(chat);
+  const chatLines = ['оператор 67: здравствуйте', 'вы: у меня вопрос', 'оператор 67: вопрос записан', 'вы: и?', 'оператор Z: ответ — возможно', 'вы: что???', 'оператор 67: сеанс завершён (не начат)', 'вы: ', 'оператор 0: это вы. вы и есть оператор'];
+  let chatI = 0;
+  (function chatLoop() {
+    setTimeout(() => {
+      const line = document.createElement('div');
+      line.textContent = chatLines[chatI++ % chatLines.length];
+      line.style.opacity = .85;
+      chatEl.appendChild(line);
+      while (chatEl.children.length > 6) chatEl.removeChild(chatEl.firstChild);
+      chatLoop();
+    }, rand(900, 2600));
+  })();
+
+  const video = w('видео');
+  const vbox = document.createElement('div');
+  vbox.className = 'broken-video';
+  vbox.innerHTML = '<div class="play">▶</div><div class="vload"></div>';
+  video.appendChild(vbox);
+  junkWrap.appendChild(video);
+  vbox.querySelector('.play').addEventListener('click', function () {
+    this.textContent = this.textContent === '▶' ? '⏸' : '▶';
+    if (this.textContent === '▶') setTimeout(() => { this.textContent = '⏸'; }, 700);
+  });
+
+  const runaway = document.createElement('button');
+  runaway.className = 'runaway';
+  runaway.textContent = 'НЕ НАЖИМАЙ';
+  junkWrap.appendChild(runaway);
+  runaway.addEventListener('mouseenter', () => {
+    runaway.style.position = 'fixed';
+    runaway.style.left = rand(4, 84) + 'vw';
+    runaway.style.top = rand(6, 86) + 'vh';
+  });
+  runaway.addEventListener('click', () => {
+    const p = document.createElement('div');
+    p.className = 'popup';
+    p.textContent = 'поздно';
+    p.style.left = rand(10, 70) + 'vw';
+    p.style.top = rand(10, 80) + 'vh';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  });
+
+  const emptyBtn = document.createElement('button');
+  emptyBtn.style.cssText = 'background:none;border:0;color:var(--toxic);font-size:2rem;cursor:pointer;padding:0;width:60px;height:30px;';
+  emptyBtn.textContent = ' ';
+  junkWrap.appendChild(emptyBtn);
+
+  const halfText = document.createElement('div');
+  halfText.textContent = 'обрубленный текст на полуслов';
+  halfText.style.cssText = 'overflow:hidden;height:1.1em;font-size:1rem;color:var(--sun);border:1px dashed rgba(255,255,255,.12);padding:0 10px;';
+  junkWrap.appendChild(halfText);
+
+  const upside = w('заголовок');
+  const usEl = document.createElement('div');
+  usEl.textContent = 'ПЕРЕВЁРНУТЫЙ ЗАГОЛОВОК';
+  usEl.style.cssText = 'transform:rotate(180deg);color:var(--violet);font-weight:900;';
+  upside.appendChild(usEl);
+  junkWrap.appendChild(upside);
+
+  const ipW = w('ваш IP');
+  const ipEl = document.createElement('div');
+  ipEl.textContent = '0.0.0.0 · страна: нигде · провайдер: никто';
+  ipW.appendChild(ipEl);
+  junkWrap.appendChild(ipW);
+
+  const nothing = w('здесь что-то было');
+  const nEl = document.createElement('div');
+  nEl.textContent = 'оно ушло. оно вернётся: не вернётся';
+  nothing.appendChild(nEl);
+  junkWrap.appendChild(nothing);
+
+  const rate = w('курс');
+  const rEl = document.createElement('div');
+  rEl.textContent = '67 к Z · Z к 67 · 67 к 67 = Z · всё растёт: вниз';
+  rate.appendChild(rEl);
+  junkWrap.appendChild(rate);
+
+  const support = w('статус сайта');
+  const sEl = document.createElement('div');
+  sEl.textContent = 'работает: нет · не работает: да · обновится: никогда · 404: ищите';
+  support.appendChild(sEl);
+  junkWrap.appendChild(support);
+
+  const bigBtn = document.createElement('button');
+  bigBtn.className = 'big-btn';
+  bigBtn.textContent = '67';
+  bigBtn.addEventListener('click', () => { bigBtn.textContent = pick(['67', 'Z', '?', '67Z']); });
+  junkWrap.appendChild(bigBtn);
+
+  const ADS = [
+    { t: 'РЕЗИНОВЫЙ ПИСЮН 67см', p: 'НЕ ГНЁТСЯ. НЕ СДАЁТСЯ. СТОИТ ВСЕГДА.', price: '67₽', old: '999₽' },
+    { t: 'ПИСЮН Z-МОДЕЛЬ', p: 'ФИРМЕННЫЙ. БУКВА Z ВЫГРАВИРОВАНА НА БАЗЕ.', price: 'Z₽', old: '67Z₽' },
+    { t: 'ПИСЮН ДНЯ', p: 'ВСЕ ПИСЮНЫ САЙТА В ОДНОМ НАБОРЕ.', price: '-67%', old: '100%' },
+    { t: 'РЕЗИНОВЫЙ АССОРТИМЕНТ', p: 'ОТ 6 ДО 67. КАЖДЫЙ ПИСЮН РАЗНЫЙ.', price: '1 шт = 67₽', old: '2 шт = 67₽' },
+    { t: 'НАБОР «67 И Z»', p: 'ДВА ПИСЮНА — ДВА ДРУГА ВАШЕГО СТОЛА.', price: '67Z₽', old: '∞' },
+    { t: 'РЕКЛАМА ПИСЮНОВ В РЕКЛАМЕ ПИСЮНОВ', p: 'КУПИ ПИСЮН — ПОЛУЧИ ПИСЮН В ПОДАРОК.', price: '0₽', old: '67₽' },
+    { t: 'ПОДДЕРЖКА 67/7', p: 'ОТВЕЧАЕМ НА ВОПРОСЫ ПРО ПИСЮНЫ ВСЕГДА.', price: 'бесплатно', old: '67₽' },
+    { t: 'ГАРАНТИЯ НЕРАЗРУШИМОСТИ', p: 'ПИСЮН НЕ РАЗРУШИМ, КРОМЕ СЛУЧАЕВ РАЗРУШЕНИЯ.', price: '67 лет', old: 'Z лет' },
+  ];
+  for (const ad of ADS) {
+    const card = document.createElement('div');
+    card.className = 'ad-card';
+    card.innerHTML = '<div class="ad-badge">реклама</div><div class="ad-title">' + ad.t + '</div><div>' + ad.p + '</div><div class="ad-price"><del>' + ad.old + '</del> ' + ad.price + '</div>';
+    const btn = document.createElement('button');
+    btn.className = 'ad-buy';
+    btn.textContent = 'КУПИТЬ';
+    btn.addEventListener('click', () => {
+      const p = document.createElement('div');
+      p.className = 'popup';
+      p.textContent = 'покупка невозможна: денег нет, смысла тоже';
+      p.style.left = rand(10, 70) + 'vw';
+      p.style.top = rand(10, 80) + 'vh';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1800);
+    });
+    card.appendChild(btn);
+    junkWrap.appendChild(card);
+  }
+
+  const adTicker = document.createElement('div');
+  adTicker.className = 'ad-ticker';
+  const ats = document.createElement('span');
+  ats.textContent = 'РЕЗИНОВЫЕ ПИСЮНЫ ОТ 6 ДО 67 ✦ СКИДКА -67% ТОЛЬКО ДО Z ✦ КУПИ ПИСЮН — ПОЛУЧИ ПИСЮН ✦ ДОСТАВКА ПИСЮНОВ В НИКУДА ЗА 67 МИНУТ ✦ '.repeat(2);
+  adTicker.appendChild(ats);
+  junkWrap.appendChild(adTicker);
+
+  const adPopTexts = ['РЕЗИНОВЫЙ ПИСЮН -67%', 'ПИСЮНЫ ВСЕХ РАЗМЕРОВ В НАЛИЧИИ', 'СКИДКА ТОЛЬКО ДО Z!', 'ПИСЮН ДНЯ: Z-МОДЕЛЬ', '67 ПРИЧИН КУПИТЬ ПИСЮН', 'РАСПРОДАЖА ПИСЮНОВ', 'СРОЧНО: РЕЗИНА ДЛЯ ПИСЮНОВ ПОДОРОЖАЛА', 'КУПИ ДВА ПИСЮНА — ТРЕТИЙ СБЕЖИТ'];
+  (function adPopupLoop() {
+    setTimeout(() => {
+      const ap = document.createElement('div');
+      ap.className = 'ad-pop';
+      ap.innerHTML = '<span class="close-x">×</span><b style="color:var(--sun)">РЕКЛАМА</b><br>' + pick(adPopTexts) + '<br><button>КУПИТЬ СЕЙЧАС</button>';
+      ap.style.left = rand(4, 74) + 'vw';
+      ap.style.top = rand(8, 82) + 'vh';
+      ap.style.transform = `rotate(${rand(-6, 6)}deg)`;
+      ap.querySelector('.close-x').addEventListener('click', () => {
+        const twin = ap.cloneNode(true);
+        twin.style.left = rand(4, 74) + 'vw';
+        twin.style.top = rand(8, 82) + 'vh';
+        document.body.appendChild(twin);
+        setTimeout(() => twin.remove(), 3500);
+      });
+      ap.querySelector('button').addEventListener('click', () => {
+        const p = document.createElement('div');
+        p.className = 'popup';
+        p.textContent = 'оплата отклонена: вы ещё не существуете';
+        p.style.left = rand(10, 70) + 'vw';
+        p.style.top = rand(10, 80) + 'vh';
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1600);
+      });
+      document.body.appendChild(ap);
+      setTimeout(() => ap.remove(), 4000);
+      adPopupLoop();
+    }, rand(2500, 6000));
+  })();
+</script>
+</body>
+</html>
